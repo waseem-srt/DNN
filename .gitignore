@@ -1,18 +1,57 @@
-# This .gitignore is appropriate for repositories deployed to GitHub Pages and using
-# a Gemfile as specified at https://github.com/github/pages-gem#conventional
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+import numpy as np
+import matplotlib.pyplot as plt
 
-# Basic Jekyll gitignores (synchronize to Jekyll.gitignore)
-_site/
-.sass-cache/
-.jekyll-cache/
-.jekyll-metadata
+# Load MNIST dataset
+(x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
 
-# Additional Ruby/bundler ignore for when you run: bundle install
-/vendor
+# Normalize pixel values (0-255 -> 0-1)
+x_train, x_test = x_train / 255.0, x_test / 255.0
 
-# Specific ignore for GitHub Pages
-# GitHub Pages will always use its own deployed version of pages-gem 
-# This means GitHub Pages will NOT use your Gemfile.lock and therefore it is
-# counterproductive to check this file into the repository.
-# Details at https://github.com/github/pages-gem/issues/768
-Gemfile.lock
+# Flatten the images (28x28 -> 784)
+x_train = x_train.reshape(-1, 28*28)
+x_test = x_test.reshape(-1, 28*28)
+
+# Define Deep Neural Network (DNN) model
+model = keras.Sequential([
+    layers.Dense(512, activation='relu', input_shape=(784,)),
+    layers.Dropout(0.2),
+    layers.Dense(256, activation='relu'),
+    layers.Dropout(0.2),
+    layers.Dense(128, activation='relu'),
+    layers.Dense(10, activation='softmax')  # Output layer (10 classes)
+])
+
+# Compile the model
+model.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
+
+# Train the model
+history = model.fit(x_train, y_train, epochs=10, batch_size=32, validation_data=(x_test, y_test))
+
+# Evaluate the model
+test_loss, test_acc = model.evaluate(x_test, y_test, verbose=2)
+print("Test Accuracy:", test_acc)
+
+# Plot training history
+plt.plot(history.history['accuracy'], label='Train Accuracy')
+plt.plot(history.history['val_accuracy'], label='Test Accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.legend()
+plt.show()
+
+# Make predictions
+predictions = model.predict(x_test)
+predicted_labels = np.argmax(predictions, axis=1)
+
+# Show a few predictions
+fig, axes = plt.subplots(1, 5, figsize=(10, 3))
+for i, ax in enumerate(axes):
+    ax.imshow(x_test[i].reshape(28, 28), cmap='gray')
+    ax.set_title(f'Predicted: {predicted_labels[i]}')
+    ax.axis('off')
+plt.show()
